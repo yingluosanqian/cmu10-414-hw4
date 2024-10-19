@@ -22,7 +22,26 @@ class CIFAR10Dataset(Dataset):
         y - numpy array of labels
         """
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        super().__init__(transforms)
+        X = []
+        y = []
+        if train:
+            for i in range(1, 6):
+                with open(os.path.join(base_folder, 'data_batch_%d' % i), 'rb') as fo:
+                    dict = pickle.load(fo, encoding='bytes')
+                    # NOTE key: b''
+                    X.append(dict[b'data'].astype(np.float32))
+                    y.append(dict[b'labels'])
+        else:
+            with open(os.path.join(base_folder, 'test_batch'), 'rb') as fo:
+                dict = pickle.load(fo, encoding='bytes')
+                X.append(dict[b'data'].astype(np.float32))
+                y.append(dict[b'labels'])
+        X = np.concatenate(X, axis=0)
+        y = np.concatenate(y, axis=0)
+        X /= 255.0
+        self.X = X
+        self.y = y
         ### END YOUR SOLUTION
 
     def __getitem__(self, index) -> object:
@@ -31,7 +50,14 @@ class CIFAR10Dataset(Dataset):
         Image should be of shape (3, 32, 32)
         """
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        X, y = self.X[index], self.y[index]
+        if self.transforms:
+            X_in = X.reshape((-1, 32, 32, 3))
+            X_out = self.apply_transforms(X_in)
+            X_ret = X_out.reshape(-1, 3, 32, 32)
+            return X_ret, y
+        else:
+            return np.squeeze(X.reshape((-1, 3, 32, 32))), y
         ### END YOUR SOLUTION
 
     def __len__(self) -> int:
@@ -39,5 +65,5 @@ class CIFAR10Dataset(Dataset):
         Returns the total number of examples in the dataset
         """
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        return self.X.shape[0]
         ### END YOUR SOLUTION
